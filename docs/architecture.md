@@ -76,4 +76,3 @@ Output Rules
 	•	All values are zero-padded
 	•	Output order matches the input order
 
-
