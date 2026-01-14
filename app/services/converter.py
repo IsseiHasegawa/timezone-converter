@@ -16,8 +16,8 @@ def convert_times(from_tz: str, to_tz: str, times: List[str]) -> List[Dict]:
             dt_from = dt_naive.replace(tzinfo=ZoneInfo(from_tz))
 
             dt_to = dt_from.astimezone(ZoneInfo(to_tz))
-
-            output = dt_to.strftime("%m/%d (%a) %H:%M")
+            
+            output = dt_to.strftime("%m/%d %H:%M (%a)")
 
             results.append({
                 "input": t,

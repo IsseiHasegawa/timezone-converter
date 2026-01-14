@@ -12,3 +12,5 @@ class ConvertResult(BaseModel):
     status: str
     error: Optional[str] = None
 
+class ConvertResponse(BaseModel):
+    results: List[ConvertResult]

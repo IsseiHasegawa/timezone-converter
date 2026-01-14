@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Timezone Converter</title>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    label {
+      font-weight: 600;
+    }
+
+    select,
+    input[type="datetime-local"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: none;
+      background-color: #2563eb;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #1e4ed8;
+    }
+
+    .secondary-btn {
+      background-color: #e5e7eb;
+      color: #111827;
+    }
+
+    .secondary-btn:hover {
+      background-color: #d1d5db;
+    }
+
+    .datetime-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .remove-btn {
+      background-color: #ef4444;
+      color: white;
+      padding: 0 12px;
+      font-size: 16px;
+    }
+
+    .remove-btn:hover {
+      background-color: #dc2626;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .result-row:last-child {
+      border-bottom: none;
+    }
+
+    .result-text {
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Timezone Converter</h1>
+
+  <!-- Input -->
+  <div class="card">
+    <label>From Timezone:</label>
+    <select id="from_tz">
+      <option value="Asia/Tokyo">Asia/Tokyo (Japan)</option>
+      <option value="Asia/Seoul">Asia/Seoul (Korea)</option>
+      <option value="Asia/Shanghai">Asia/Shanghai (China)</option>
+      <option value="Asia/Singapore">Asia/Singapore</option>
+      <option value="Europe/London">Europe/London (UK)</option>
+      <option value="Europe/Paris">Europe/Paris</option>
+      <option value="America/New_York">America/New_York (US East)</option>
+      <option value="America/Chicago">America/Chicago (US Central)</option>
+      <option value="America/Los_Angeles">America/Los_Angeles (US West)</option>
+    </select>
+
+    <label>To Timezone:</label>
+    <select id="to_tz">
+      <option value="America/New_York">America/New_York (US East)</option>
+      <option value="Asia/Tokyo">Asia/Tokyo (Japan)</option>
+      <option value="Europe/London">Europe/London (UK)</option>
+      <option value="Europe/Paris">Europe/Paris</option>
+      <option value="Asia/Singapore">Asia/Singapore</option>
+    </select>
+
+    <h3>Date & Time</h3>
+
+    <div id="datetime-list">
+      <div class="datetime-row">
+        <input type="datetime-local" class="datetime-input" />
+        <button class="remove-btn" onclick="removeRow(this)">×</button>
+      </div>
+    </div>
+
+    <button class="secondary-btn" onclick="addDatetime()">＋ Add another time</button>
+    <br /><br />
+    <button onclick="convert()">Convert</button>
+  </div>
+
+  <!-- Result -->
+  <div class="card">
+    <div class="result-header">
+      <h2>Result</h2>
+      <button class="secondary-btn" onclick="copyAll()">Copy All</button>
+    </div>
+    <div id="result"></div>
+  </div>
+</div>
+
+<script>
+  let lastResults = [];
+
+  function addDatetime() {
+    const list = document.getElementById("datetime-list");
+
+    const row = document.createElement("div");
+    row.className = "datetime-row";
+
+    const input = document.createElement("input");
+    input.type = "datetime-local";
+    input.className = "datetime-input";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "×";
+    removeBtn.className = "remove-btn";
+    removeBtn.onclick = () => row.remove();
+
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    list.appendChild(row);
+  }
+
+  function removeRow(button) {
+    button.parentElement.remove();
+  }
+
+  async function convert() {
+    const fromTz = document.getElementById("from_tz").value;
+    const toTz = document.getElementById("to_tz").value;
+
+    const inputs = document.querySelectorAll(".datetime-input");
+    const times = [];
+
+    inputs.forEach(input => {
+      if (input.value) {
+        const date = new Date(input.value);
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const dd = String(date.getDate()).padStart(2, "0");
+        const hh = String(date.getHours()).padStart(2, "0");
+        const min = String(date.getMinutes()).padStart(2, "0");
+
+        times.push(`${mm}/${dd} ${hh}:${min}`);
+      }
+    });
+
+    if (times.length === 0) {
+      alert("Please select at least one date and time");
+      return;
+    }
+
+    const response = await fetch("http://127.0.0.1:8000/convert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from_timezone: fromTz,
+        to_timezone: toTz,
+        times: times
+      })
+    });
+
+    const data = await response.json();
+    const resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "";
+
+    lastResults = data.results
+      .filter(item => item.status === "ok")
+      .map(item => item.output);
+
+    lastResults.forEach(output => {
+      const row = document.createElement("div");
+      row.className = "result-row";
+
+      const text = document.createElement("span");
+      text.className = "result-text";
+      text.textContent = output;
+
+      const copyBtn = document.createElement("button");
+      copyBtn.textContent = "Copy";
+      copyBtn.className = "secondary-btn";
+
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(output);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "Copy", 1000);
+      };
+
+      row.appendChild(text);
+      row.appendChild(copyBtn);
+      resultDiv.appendChild(row);
+    });
+  }
+
+  function copyAll() {
+    if (lastResults.length === 0) {
+      alert("No results to copy");
+      return;
+    }
+
+    navigator.clipboard.writeText(lastResults.join("\n"));
+    alert("All results copied!");
+  }
+</script>
+
+</body>
+</html>
